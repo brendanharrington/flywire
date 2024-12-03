@@ -1,2 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+
+# Virtual environments
+.venv/
+env/
+*.env
+*.venv
+
+# Jupyter
+*.ipynb_checkpoints/
+
+# macOS
 .DS_Store
+
+# Build artifacts
+*.egg
+*.egg-info/
+dist/
+build/
+*.whl
+
+# Outputs
+outputs/
+
+# Temporary files
+*.log
+*.tmp
+*.bak
+
+# Data
+data/*.gz
+data/*.pkl
+data/*.csv
+
+# Environment files
+.env
+
 flywire.code-workspace
