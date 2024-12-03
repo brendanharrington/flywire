@@ -38,4 +38,6 @@ data/*.csv
 # Environment files
 .env
 
+# VSCode files
+.vscode/
 flywire.code-workspace

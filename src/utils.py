@@ -12,3 +12,6 @@ def print_graph_stats(graph):
     print("Edges:", graph.num_edges())
     print("Vertex properties:", list(graph.vp.keys()))
     print("Edge properties:", list(graph.ep.keys()))
+
+def print_greeting():
+    print('Hello from utils.h!')
