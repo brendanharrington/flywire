@@ -1,10 +1,7 @@
-from src.data_loader import load_graph, load_state
-from src.community_detection import analyze_hierarchy, visualize_state
-from src.utils import print_graph_stats, generate_timestamped_filename
+import src.utils as ut
+import src.data_loader as dl
 
-# import src.utils as ut
 
-# action c
 # file_name = str(input("Please enter a filename: "))
 # file_extension = str(input("Please enter a file extension: "))
 # timestamp_file = ut.generate_timestamped_filename(file_name,file_extension)
@@ -22,18 +19,20 @@ def main():
     choice = input("Enter your choice: ")
 
     if choice == "1":
-      graph = load_graph("data/connections.gt.gz")
-      print_graph_stats(graph)
+      g = dl.load_graph("data/connections.gt.gz")
+      ut.print_graph_stats(g)
 
     elif choice == "2":
-      state = load_state("data/state_nested.pkl.gz")
-      analyze_hierarchy(state)
+      # state = load_state("data/state_nested.pkl.gz")
+      # analyze_hierarchy(state)
+      print(choice)
 
     elif choice == "3":
-      state = load_state("data/state_nested.pkl.gz")
-      output_file = generate_timestamped_filename("nested_state", "svg")
-      visualize_state(state, f"outputs/{output_file}")
-      print(f"Visualization saved as outputs/{output_file}")
+      # state = load_state("data/state_nested.pkl.gz")
+      # output_file = generate_timestamped_filename("nested_state", "svg")
+      # visualize_state(state, f"outputs/{output_file}")
+      # print(f"Visualization saved as outputs/{output_file}")
+      print(choice)
 
     elif choice == "4":
       print("Exiting...")

@@ -17,7 +17,7 @@ flywire/
 ## **Setup Instructions**
 
 ### Prerequisites
-- **Python**: Version 3.8 or later
+- **Python**: Version 3.12.7 or later
 - **System Tools**:
   - `graph-tool`: Install using a package manager (instructions below)
   - `git`: For version control
