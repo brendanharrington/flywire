@@ -1,10 +1,15 @@
 import graph_tool.all as gt
-import time
 
-def load_graph(g):
-  start = time.time()
-  file_name = "data/connections.gt.gz"
+def load_graph(file_name):
+  print("\nLoading graph from", file_name, "...")
   g = gt.load_graph(file_name)
-  end = time.time()
-  print(f"Graph loaded successfully from \"{file_name}\" in ~{end - start:.4f} seconds")
+  print("Done.")
+
+  print("\n=== GRAPH SUMMARY ===")
+  print(f"Vertices: {g.num_vertices():,}")
+  print(f"Edges: {g.num_edges():,}.")
+  
+  print("\n=== PROPERTY LIST ===")
+  g.list_properties()
+
   return g
