@@ -1,33 +1,36 @@
 import graph_tool.all as gt
-import load_graph as lg
-import filter_graph as fg
-import utils as ut
+import matplotlib.pyplot as plt
+import numpy as np
+from collections import defaultdict
 import time
+import pickle
+import gzip
+
+import functions as fnc
+
 
 def main():
-  g = lg.load_graph(file_name="data/connections.gt.gz")
+    g = gt.load_graph(file_name=f"data/connections.gt.gz")
+    fnc.print_summmary_statistics(g)
+    print(fnc.average_shortest_path_length(g))
 
-  print("\nCalculating betweenness for graph ...")
-  start = time.time()
-  vertex_betweenness, edge_betweenness = gt.betweenness(g)
-  print("Completed in ", time.time()-start, "seconds")
+    # filtered_g = fg.filter_graph(g, threshold=100)
+    # gt.draw(filtered_g)
+    
+    
+    # edges = g.get_all_edges()
+    # num_nodes = g.num_vertices()
 
-  print("\nCalculating Central Point Dominance for the Graph ...")
-  cpd = gt.central_point_dominance(g, vertex_betweenness)
-  print("Completed in ", time.time()-start, "seconds")
+    # connected = is_graph_connected(edges, num_nodes)
+    # print("Is the graph connected?", connected)
 
-  print(f"\nCentral Point Dominance: {cpd}")
+    # d_map, d_hist = gt.label_components(g, directed=True)
 
-  filtered_g = fg.filter_graph(g, threshold=100)
-  
-  print("\nCalculating betweenness for filtered graph ...")
-  start = time.time()
-  f_vertex_betweenness, f_edge_betweenness = gt.betweenness(g)
-  print("Completed in ", time.time()-start, "seconds")
+    # print(d_hist)
 
-  print("\nCalculating Central Point Dominance for the Graph ...")
-  f_cpd = gt.central_point_dominance(filtered_g, f_vertex_betweenness)
-  print(f"\nCentral Point Dominance: {f_cpd}")
-  
+    # fnc.print_summmary_statistics(g)
+    # fnc.run_loop(g)
+    
+    
 if __name__ == "__main__":
-  main()
+    main()
