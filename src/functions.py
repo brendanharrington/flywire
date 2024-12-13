@@ -28,7 +28,6 @@ def run_loop(g):
             case _:
                 print('\nInvalid entry, try again.')
 
-
 def average_shortest_path_length(g):
     """
     Calculate the average shortest path length using graph-tool.
@@ -58,41 +57,11 @@ def average_shortest_path_length(g):
     else:
         return float("inf")
 
-
-
-def print_summmary_statistics(g):
-    dist_unweighted, ends_unweighted = gt.pseudo_diameter(g)
-    dist_weighted, ends_weighted =  gt.pseudo_diameter(g, weights=g.ep.syn_count)
-    c, num_triangles, num_triples = gt.global_clustering(g, weight=g.ep.syn_count, ret_counts=True)
-    
-    print('Pseudo-diameter: (weighted):', dist_weighted)
-    print('Average shortest path length:', average_shortest_path_length(g))
-    print('Clustering coefficient:', c[0], 'with standard deviation', c[1])
-    print('Number of triangles:', num_triangles)
-    print('Number of triples:', num_triples)
-
 def print_motif_statistics(g):
     num_v_in_motif = 3
     motifs, num_motifs = gt.motifs(g, num_v_in_motif)
     print('Number of motifs:', num_motifs)
 
-def load_graph(file_name):
-    g = gt.load_graph(file_name)
-
-    print("\Loaded graph from", file_name, ".")
-    print(f"Vertices: {g.num_vertices():,}")
-    print(f"Edges: {g.num_edges():,}.")
-
-    print("\n=== PROPERTY LIST ===")
-    g.list_properties()
-
-    return g
-
-def load_state(filepath):
-    """Load a nested state object from a gzipped pickle file."""
-    with gzip.open(filepath, 'rb') as f:
-        return pickle.load(f)
-    
 def plot_PDFhist(kis):
     # input : a list of degrees, e.g., from a networkx graph G
     # output: a plot of the PDF of the degree distribution Pr(k) as a simple histogram for k>=1
@@ -163,30 +132,6 @@ def print_graph_stats(graph):
     print("Edges:", graph.num_edges())
     print("Vertex properties:", list(graph.vp.keys()))
     print("Edge properties:", list(graph.ep.keys()))
-
-def plot_ccdf(graph):
-    """Plot the CCDF of the degree distribution of a graph."""
-    degrees = [v.out_degree() for v in graph.vertices()]  # Use in_degree() for in-degrees
-    sorted_degrees = sorted(degrees, reverse=True)
-
-    # Compute CCDF
-    ccdf = np.arange(1, len(sorted_degrees) + 1) / len(sorted_degrees)
-
-    # Plot
-    plt.figure(figsize=(8, 6))
-    plt.loglog(sorted_degrees, ccdf, marker='o', linestyle='', markersize=5, label="CCDF")
-    plt.xlabel("Degree (log scale)")
-    plt.ylabel("CCDF (log scale)")
-    plt.title("Complementary Cumulative Distribution Function (CCDF)")
-    plt.legend()
-    plt.grid(True, which="both", linestyle="--", linewidth=0.5)
-
-    # Show the plot
-    plt.show()
-
-def visualize_graph(g, file_name="graph.png"):
-    gt.graph_draw(g, output=file_name)
-    print(f"Graph visualization saved to {file_name}")
 
 def filter_graph(g, threshold):
   print(f"\nFiltering out vertices with less than {threshold} synapses ...")
@@ -278,3 +223,122 @@ def is_graph_connected(edges, num_nodes):
 
     # Check if all nodes are visited
     return len(visited) == num_nodes
+
+def plot_degree_distribution(g, degree_type="in", weighted=False, flag=0):
+    """
+    Plot the degree distribution of a graph.
+
+    Parameters:
+    g: graph_tool.Graph
+        The graph object.
+    degree_type: str
+        "in" for in-degrees, "out" for out-degrees.
+    weighted: bool
+        True for weighted degree distribution, False for unweighted.
+    flag: bool
+        Print if 1
+    """
+    # Determine degree calculation based on parameters
+    if degree_type == "in":
+        if weighted:
+            degrees = g.get_in_degrees(list(g.vertices()), g.ep.syn_count)
+            title = "In-degree distribution (weighted)"
+        else:
+            degrees = g.get_in_degrees(list(g.vertices()))
+            title = "In-degree distribution (unweighted)"
+    elif degree_type == "out":
+        if weighted:
+            degrees = g.get_out_degrees(list(g.vertices()), g.ep.syn_count)
+            title = "Out-degree distribution (weighted)"
+        else:
+            degrees = g.get_out_degrees(list(g.vertices()))
+            title = "Out-degree distribution (unweighted)"
+    else:
+        raise ValueError("degree_type must be either 'in' or 'out'.")
+
+    # Create histogram
+    if flag == 1:
+        bin_range = int((max(degrees)) - min(degrees))+1
+        counts, bins = np.histogram(degrees, bin_range)
+        plt.figure(figsize=(10, 5))
+        plt.stairs(counts, bins)
+        plt.xlabel('Degree (k)')
+        plt.ylabel('Frequency')
+        plt.title(title)
+        plt.show()
+
+    return degrees
+
+def print_basic_statistics(g, flag):
+    n = g.num_vertices()
+    m = g.num_edges()
+    k_ins_unweighted = plot_degree_distribution(g, degree_type='in', weighted=False) # add 'flag=1' as a parameter to plot a histogram
+    k_ins_weighted = plot_degree_distribution(g, degree_type='in', weighted=True) # add 'flag=1' as a parameter to plot a histogram
+    k_outs_unweighted = plot_degree_distribution(g, degree_type='out', weighted=False) # add 'flag=1' as a parameter to plot a histogram
+    k_outs_weighted = plot_degree_distribution(g, degree_type='out', weighted=True) # add 'flag=1' as a parameter to plot a histogram
+
+    print('\nNumber of nodes:', n, '\n',
+          'Number of edges:', m, '\n',
+          'Mean degree (unweighted):', np.mean(k_ins_unweighted), '\n',
+          'Mean degree (weighted)', np.mean(k_ins_weighted), '\n')
+
+    print('=== IN DEGREE ===', '\n',
+          '=== UNWEIGHTED ===', '\n',
+          'Maximum:', max(k_ins_unweighted), '\n',
+          'Minimum:', min(k_ins_unweighted), '\n',
+          '=== WEIGHTED ===', '\n',
+          'Maximum:', max(k_ins_weighted), '\n',
+          'Minimum:', min(k_ins_weighted), '\n')
+    
+    print('=== OUT DEGREE ===', '\n',
+          '=== UNWEIGHTED ===', '\n',
+          'Maximum:', max(k_outs_unweighted), '\n',
+          'Minimum:', min(k_outs_unweighted), '\n',
+          '=== WEIGHTED ===', '\n',
+          'Maximum:', max(k_outs_weighted), '\n',
+          'Minimum:', min(k_outs_weighted), '\n')
+    
+    
+    print('=== TOTAL DEGREE ===', '\n',
+          'UNWEIGHTED', '\n',
+          'Mean:', np.mean(k_ins_unweighted), '\n',
+          'Maximum:', max(k_ins_unweighted), '\n',
+          'Minimum:', min(k_ins_unweighted), '\n',
+          '\n',
+          'WEIGHTED', '\n',
+          'Mean:', np.mean(k_ins_weighted), '\n',
+          'Maximum:', max(k_ins_weighted), '\n',
+          'Minimum:', min(k_ins_weighted), '\n')
+
+def print_summmary_statistics(g, version):
+    n = g.num_vertices()
+    m = g.num_edges()
+    k_mean = m/n
+    connection_probability = m / (n*(n-1))
+    reciprocity = gt.edge_reciprocity(g)
+
+    dist_unweighted, ends_unweighted = gt.pseudo_diameter(g)
+    dist_weighted, ends_weighted =  gt.pseudo_diameter(g, weights=g.ep.syn_count)
+    c, num_triangles, num_triples = gt.global_clustering(g, ret_counts=True)
+
+    in_degrees = g.get_in_degrees(g.get_vertices())
+    out_degrees = g.get_out_degrees(g.get_vertices())
+    total_degrees = in_degrees + out_degrees
+    
+    print(f'\n=== v{version} ===')
+    print('\nNumber of Nodes:', n)
+    print('Number of Edges:', m)
+
+    print(f'\nAverage Node Degree: {k_mean:4f}')
+    print(f'\nAverage Node Degree: {k_mean:4f}')
+    print('Maximum Node Degree:', max(total_degrees))
+    print('Minimum Node Degree:', min(total_degrees))
+
+    print(f'\nConnection Probability: {connection_probability:4f}')
+    print(f'Reciprocity: {reciprocity:4f}\n')
+
+    print('Pseudo-diameter:', dist_unweighted)
+    print(f'Clustering coefficient: {c[0]:4f} with standard deviation {c[1]:4f}')
+    print(f'Number of triangles: {num_triangles}')
+    print(f'Number of triples: {num_triples}', '\n')
+
