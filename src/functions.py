@@ -32,11 +32,6 @@ def run_loop(g):
                 print('\nInvalid entry, try again.')
 
 
-def print_motif_statistics(g):
-    num_v_in_motif = 3
-    motifs, num_motifs = gt.motifs(g, num_v_in_motif)
-    print('Number of motifs:', num_motifs)
-
 """ 
 PLOT
 """
@@ -97,6 +92,54 @@ def plot_CCDF(kis):
     plt.ylabel('Pr(K>=k)')
     plt.show()
     return
+
+def plot_neuropil_connection_strength(g):
+    all_regions, np_order, np_names, np_color = get_region_stats()
+
+    # Filter edges with neuropil != "None"
+    valid_edges = [e for e in g.edges() if g.ep.neuropil[e] != "None"]
+
+    # Count and sum syn_count per neuropil
+    neuropil_conn_cnt = {}
+    neuropil_sizes = {}
+
+    for e in valid_edges:
+        neuropil = g.ep.neuropil[e]
+        syn_count = g.ep.syn_count[e]
+        
+        if neuropil not in neuropil_conn_cnt:
+            neuropil_conn_cnt[neuropil] = 0
+            neuropil_sizes[neuropil] = 0
+        
+        neuropil_conn_cnt[neuropil] += 1  # Count connections
+        neuropil_sizes[neuropil] += syn_count  # Sum synapse count
+
+    # Sort by np_order
+    np_conn_cnt = np.array([neuropil_conn_cnt.get(np, 0) for np in np_order])
+    np_sizes = np.array([neuropil_sizes.get(np, 0) for np in np_order])
+
+    # Calculate average connection strength
+    np_strength = np_sizes / np_conn_cnt
+
+    # Plot
+    x_positions = np.arange(len(np_names))
+
+    # Plot using matplotlib
+    fig, ax = plt.subplots(1, 1, figsize=(20, 4))
+    bars = ax.bar(x_positions, np_strength, color=np_color)
+
+    # Format x-axis
+    ax.set_xticks(x_positions)
+    ax.set_xticklabels(np_names, rotation=90)
+    for xtick, color in zip(ax.get_xticklabels(), np_color):
+        xtick.set_color(color)
+
+    # Set axis labels and formatting
+    ax.tick_params(axis='y', labelsize=20)
+    ax.set_ylabel("Average conn. strength", fontsize=24)
+    ax.set_xlabel("Neuropils", fontsize=24)
+
+    plt.show()
 
 
 """ 
@@ -205,3 +248,42 @@ def count_FFBL_motifs(g,flag=0):
                         print(f"FBL: ({i},{j}),({j},{k}),({k},{i})")
                         
     return FFL_count,FBL_count
+
+def get_region_stats():
+
+    all_regions = ["FB","EB","PB","NO","AMMC_L","AMMC_R","FLA_L","FLA_R",
+               "CAN_L","CAN_R","PRW","SAD","GNG","AL_L","AL_R","LH_L","LH_R",
+               "MB_CA_L","MB_CA_R","MB_PED_L","MB_PED_R","MB_VL_L","MB_VL_R","MB_ML_L",
+               "MB_ML_R","BU_L","BU_R","GA_L","GA_R","LAL_L","LAL_R","SLP_L","SLP_R",
+               "SIP_L","SIP_R","SMP_L","SMP_R","CRE_L","CRE_R","SCL_L","SCL_R","ICL_L","ICL_R",
+               "IB_L","IB_R","ATL_L","ATL_R","VES_L","VES_R","EPA_L","EPA_R","GOR_L","GOR_R","SPS_L",
+               "SPS_R","IPS_L","IPS_R","AOTU_L","AOTU_R","AVLP_L","AVLP_R","PVLP_L","PVLP_R","PLP_L","PLP_R",
+               "WED_L","WED_R","ME_L","ME_R","AME_L","AME_R","LO_L","LO_R","LOP_L","LOP_R","LA_L","LA_R","OCG"]
+    
+    np_order = ["FB","EB","PB","NO","AMMC_L","AMMC_R","FLA_L","FLA_R","CAN_L","CAN_R","PRW","SAD","GNG",
+                "AL_L","AL_R","LH_L","LH_R","MB_CA_L","MB_CA_R","MB_PED_L","MB_PED_R","MB_VL_L","MB_VL_R",
+                "MB_ML_L","MB_ML_R","BU_L","BU_R","GA_L","GA_R","LAL_L","LAL_R","SLP_L","SLP_R","SIP_L",
+                "SIP_R","SMP_L","SMP_R","CRE_L","CRE_R","SCL_L","SCL_R","ICL_L","ICL_R","IB_L","IB_R","ATL_L",
+                "ATL_R","VES_L","VES_R","EPA_L","EPA_R","GOR_L","GOR_R","SPS_L","SPS_R","IPS_L","IPS_R",
+                "AOTU_L","AOTU_R","AVLP_L","AVLP_R","PVLP_L","PVLP_R","PLP_L","PLP_R","WED_L","WED_R","ME_L",
+                "ME_R","AME_L","AME_R","LO_L","LO_R","LOP_L","LOP_R","LA_L","LA_R","OCG"]
+    
+    np_names = ["FB","EB","PB","NO","AMMC(L)","AMMC(R)","FLA(L)","FLA(R)","CAN(L)","CAN(R)","PRW","SAD",
+                "GNG","AL(L)","AL(R)","LH(L)","LH(R)","MB-CA(L)","MB-CA(R)","MB-PED(L)","MB-PED(R)",
+                "MB-VL(L)","MB-VL(R)","MB-ML(L)","MB-ML(R)","BU(L)","BU(R)","GA(L)","GA(R)","LAL(L)",
+                "LAL(R)","SLP(L)","SLP(R)","SIP(L)","SIP(R)","SMP(L)","SMP(R)","CRE(L)","CRE(R)","SCL(L)"
+                ,"SCL(R)","ICL(L)","ICL(R)","IB(L)","IB(R)","ATL(L)","ATL(R)","VES(L)","VES(R)","EPA(L)",
+                "EPA(R)","GOR(L)","GOR(R)","SPS(L)","SPS(R)","IPS(L)","IPS(R)","AOTU(L)","AOTU(R)","AVLP(L)",
+                "AVLP(R)","PVLP(L)","PVLP(R)","PLP(L)","PLP(R)","WED(L)","WED(R)","ME(L)","ME(R)","AME(L)",
+                "AME(R)","LO(L)","LO(R)","LOP(L)","LOP(R)","LA(L)","LA(R)","OCG"]
+    
+    np_color = ["#049a93","#10cac8","#36cfdc","#21adc4","#145ddc","#145ddc","#274bfe","#274bfe","#2081f2","#2081f2",
+                "#513bfe","#513bfe","#603ee4","#30d2fe","#30d2fe","#fe99b8","#fe99b8","#fe9e3f","#fe9e3f","#ffa88d",
+                "#ffa88d","#ffae79","#ffae79","#ff9e69","#ff9e69","#5479ef","#5479ef","#3d8ce2","#3d8ce2","#285bfa",
+                "#285bfa","#fed942","#fed942","#feb13a","#feb13a","#ffda59","#ffda59","#febd3b","#febd3b","#fdb95d",
+                "#fdb95d","#fbb256","#fbb256","#fe9e3e","#fe9e3e","#fead49","#fead49","#02dcc0","#02dcc0","#07c4ac",
+                "#07c4ac","#00b5d3","#00b5d3","#00957e","#00957e","#0dbfc2","#0dbfc2","#4c9efe","#4c9efe","#3d89fe",
+                "#3d89fe","#1a57ee","#1a57ee","#50bcfe","#50bcfe","#3b8dfe","#3b8dfe","#dd41d3","#dd41d3","#bc21a2",
+                "#bc21a2","#8a34d4","#8a34d4","#bc21a2","#bc21a2","#A21A78","#A21A78","#EA4BEA"]
+    
+    return all_regions, np_order, np_names, np_color

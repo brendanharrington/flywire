@@ -4,6 +4,9 @@ import numpy as np
 
 import functions as fnc
 
+
+
+    
 def main():
     version = '783'
     file_name = 'data/connections-v' + version + '.gt.gz'
@@ -12,5 +15,10 @@ def main():
     
     fnc.print_summmary_statistics(g, version)
 
+    
+
 if __name__ == "__main__":
     main()
+
+
+
