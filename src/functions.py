@@ -7,6 +7,9 @@ import pickle
 import gzip
 import datetime
 
+""" 
+LOOP
+"""
 def run_loop(g):
     while True:
         print('\n========= OPTIONS =========')
@@ -28,40 +31,15 @@ def run_loop(g):
             case _:
                 print('\nInvalid entry, try again.')
 
-def average_shortest_path_length(g):
-    """
-    Calculate the average shortest path length using graph-tool.
-
-    Parameters:
-        g (Graph): A graph-tool Graph object.
-
-    Returns:
-        float: Average shortest path length.
-    """
-    # Compute all-pairs shortest distances
-    total_length = 0
-    total_pairs = 0
-
-    distances = gt.shortest_distance(g, weights=g.ep.syn_count).a
-
-    
-
-    for v in g.vertices():
-        distances = gt.shortest_distance(g, source=v, weights=g.ep.syn_count).a  # Get as numpy array
-        finite_distances = distances[distances < float("inf")]
-        total_length += finite_distances.sum()
-        total_pairs += len(finite_distances) - 1  # Exclude self-distances
-
-    if total_pairs > 0:
-        return total_length / total_pairs
-    else:
-        return float("inf")
 
 def print_motif_statistics(g):
     num_v_in_motif = 3
     motifs, num_motifs = gt.motifs(g, num_v_in_motif)
     print('Number of motifs:', num_motifs)
 
+""" 
+PLOT
+"""
 def plot_PDFhist(kis):
     # input : a list of degrees, e.g., from a networkx graph G
     # output: a plot of the PDF of the degree distribution Pr(k) as a simple histogram for k>=1
@@ -120,154 +98,10 @@ def plot_CCDF(kis):
     plt.show()
     return
 
-def generate_timestamped_filename(base_name, extension):
-    """Generate a unique filename with a timestamp."""
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    return f"{base_name}_{timestamp}.{extension}"
 
-def print_graph_stats(graph):
-    """Print basic statistics for a graph."""
-    print("\nGRAPH STATISTICS")
-    print("Vertices:", graph.num_vertices())
-    print("Edges:", graph.num_edges())
-    print("Vertex properties:", list(graph.vp.keys()))
-    print("Edge properties:", list(graph.ep.keys()))
-
-def filter_graph(g, threshold):
-  print(f"\nFiltering out vertices with less than {threshold} synapses ...")
-  start = time.time()
-  filtered_g = gt.GraphView(g, efilt=lambda e: g.ep["syn_count"][e] > threshold)
-  print("Completed in ", time.time()-start, "seconds")
-
-  print("\n=== GRAPH SUMMARY ===")
-  print(f"Vertices: {filtered_g.num_vertices():,}", f"Edges: {filtered_g.num_edges():,}.")
-
-  return filtered_g
-
-def compute_metrics(g):
-    # Compute and print degree distribution
-    in_degrees = g.get_in_degrees(g.get_vertices())
-    out_degrees = g.get_out_degrees(g.get_vertices())
-    print("In-Degree Distribution:", in_degrees)
-    print("Out-Degree Distribution:", out_degrees)
-
-    # Compute clustering coefficient
-    clustering_coeff = gt.global_clustering(g)[0]
-    print(f"Average Clustering Coefficient: {clustering_coeff:.4f}")
-
-def sbm():
-    start = time.time()
-
-    print("\nLoading connections.gt.gz ...")
-    g = gt.load_graph("data/connections.gt.gz")
-    print("Successfully loaded connections.gt.gz!")
-
-    print("\nCreating a BlockState object for the graph ...")
-    state = gt.minimize_blockmodel_dl(g)
-    print("Successfully created BlockState!")
-
-    print("\nBlockState Statistics:")
-    blocks = state.get_blocks()
-
-    num_nodes = state.get_N()
-    print(f'Total number of nodes: {num_nodes}')
-
-    num_edges = state.get_E()
-    print(f'Total number of edges: {num_edges}')
-
-    num_blocks = state.get_B()
-    print(f'Total number of blocks: {num_blocks}')
-
-    eff_num_blocks = state.get_Be()
-    print(f'Effective number of blocks: {eff_num_blocks}')
-
-    # Calculate entropy of the model
-    entropy = state.entropy()
-    print(f"Model entropy: {entropy}")
-
-    # Calculate the description length (DL)
-    dl = state.entropy(dl=True)
-    print(f"Model description length: {dl}") 
-
-    end = time.time()
-    print(f"\nExecution time: {end - start} seconds")
-
-def is_graph_connected(edges, num_nodes):
-    """ 
-    Check if a graph is connected.
-
-    Parameters:
-        edges (list of tuples): List of (source, target, weight) edges.
-        num_nodes (int): Total number of nodes in the graph.
-
-    Returns:
-        bool: True if the graph is connected, False otherwise.
-    """
-    # Build adjacency list
-    adjacency_list = defaultdict(list)
-    for src, tgt, weight in edges:
-        adjacency_list[src].append(tgt)
-        adjacency_list[tgt].append(src)
-
-    visited = set()
-
-    def dfs(node):
-        """Depth-First Search to visit nodes."""
-        visited.add(node)
-        for neighbor in adjacency_list[node]:
-            if neighbor not in visited:
-                dfs(neighbor)
-
-    # Start DFS from the first node
-    dfs(0)
-
-    # Check if all nodes are visited
-    return len(visited) == num_nodes
-
-def plot_degree_distribution(g, degree_type="in", weighted=False, flag=0):
-    """
-    Plot the degree distribution of a graph.
-
-    Parameters:
-    g: graph_tool.Graph
-        The graph object.
-    degree_type: str
-        "in" for in-degrees, "out" for out-degrees.
-    weighted: bool
-        True for weighted degree distribution, False for unweighted.
-    flag: bool
-        Print if 1
-    """
-    # Determine degree calculation based on parameters
-    if degree_type == "in":
-        if weighted:
-            degrees = g.get_in_degrees(list(g.vertices()), g.ep.syn_count)
-            title = "In-degree distribution (weighted)"
-        else:
-            degrees = g.get_in_degrees(list(g.vertices()))
-            title = "In-degree distribution (unweighted)"
-    elif degree_type == "out":
-        if weighted:
-            degrees = g.get_out_degrees(list(g.vertices()), g.ep.syn_count)
-            title = "Out-degree distribution (weighted)"
-        else:
-            degrees = g.get_out_degrees(list(g.vertices()))
-            title = "Out-degree distribution (unweighted)"
-    else:
-        raise ValueError("degree_type must be either 'in' or 'out'.")
-
-    # Create histogram
-    if flag == 1:
-        bin_range = int((max(degrees)) - min(degrees))+1
-        counts, bins = np.histogram(degrees, bin_range)
-        plt.figure(figsize=(10, 5))
-        plt.stairs(counts, bins)
-        plt.xlabel('Degree (k)')
-        plt.ylabel('Frequency')
-        plt.title(title)
-        plt.show()
-
-    return degrees
+""" 
+PRINT 
+"""
 
 def print_basic_statistics(g, flag):
     n = g.num_vertices()
@@ -342,3 +176,32 @@ def print_summmary_statistics(g, version):
     print(f'Number of triangles: {num_triangles}')
     print(f'Number of triples: {num_triples}', '\n')
 
+""" 
+MISC
+"""
+def count_FFBL_motifs(g,flag=0):
+    # input : a networkx digraph G and a binary-valued variabe flag
+    # output: if flag=1, a print statement of the type {FFL,FBL} and its member edges for each found motif
+    #         a list (FFL,FBL) of the counts of feed-forward and feed-back loops in G
+    
+    # YOUR CODE HERE
+    FFL_count = 0
+    FBL_count = 0
+
+    for i in g.get_vertices():
+        for j in g.get_out_neighbors(i):
+            for k in g.get_out_neighbors(j):
+                if k == i:
+                    continue  
+                
+                if g.edge(i, k):
+                    FFL_count += 1
+                    if flag == 1:
+                        print(f"FFL: ({i},{j}),({j},{k}),({i},{k})")
+                
+                if g.edge(k, i):
+                    FBL_count += 1
+                    if flag == 1:
+                        print(f"FBL: ({i},{j}),({j},{k}),({k},{i})")
+                        
+    return FFL_count,FBL_count
