@@ -1,11 +1,6 @@
 import graph_tool.all as gt
 import matplotlib.pyplot as plt
 import numpy as np
-from collections import defaultdict
-import time
-import pickle
-import gzip
-import datetime
 
 """ 
 LOOP
@@ -30,7 +25,6 @@ def run_loop(g):
                 break
             case _:
                 print('\nInvalid entry, try again.')
-
 
 """ 
 PLOT
@@ -141,6 +135,122 @@ def plot_neuropil_connection_strength(g):
 
     plt.show()
 
+def plot_edge_percolation(g):
+    # edges to be removed in a reversed order
+    edge_order_w_size = sorted([[e[0], e[1], e[2]] for e in g.get_edges([g.ep["syn_count"]])], 
+                    key=lambda e: e[2], reverse=False)
+    edge_order = np.array(edge_order_w_size)[:,:2]
+    edge_size = np.array(edge_order_w_size)[:,2]
+
+    sizes, comp = gt.edge_percolation(g, edge_order)
+
+    # edge percolation, removing strong connecions
+    fig, ax = plt.subplots(1,1,figsize=(6,4))
+    ax2 = ax.twinx()
+    ax.plot(sizes, 'red')
+    ax2.plot(np.insert(edge_size,0,0)[:len(sizes)], 'gray')
+    ax.set_ylabel("Size of the largest WCC")
+    ax2.set_ylabel("Largest connection weight", color='gray')
+    ax2.set_yscale('log')
+    ax.set_xlabel("# of remaining edges")
+    plt.show()
+
+    w_sizes, comp = gt.edge_percolation(g, edge_order[::-1])
+    
+    # edge percolation, removing weak connecions
+    fig, ax = plt.subplots(1,1,figsize=(6,4))
+    ax2 = ax.twinx()
+    ax.plot(w_sizes, 'pink')
+    ax2.plot(np.insert(edge_size,0,0)[::-1][:len(sizes)], 'gray')
+    ax.set_ylabel("Size of the largest WCC")
+    ax2.set_ylabel("Smallest connection weight", color='gray')
+    ax2.set_yscale('log')
+    ax.set_xlabel("# of remaining edges")
+    
+    # edge percolation, removing strong connecions
+    fig, ax = plt.subplots(1,1,figsize=(6,4))
+    ax2 = ax.twinx()
+    ax.plot(w_sizes, 'pink', label='Strong subgraphs')
+    ax.plot(sizes, 'red', label='Weak subgraphs')
+    ax.set_xscale('log')
+    ax.set_ylabel("Size of the largest WCC")
+    ax.set_xlabel("# of remaining edges")
+    ax.legend()
+
+    scc1st = []
+    scc2nd = []
+    wcc1st = []
+    wcc2nd = []
+    edrec = []
+    clustering_coefs = []
+    densities = []
+    edrecER = []
+    s_ths = [1, 3, 5, 10, 15, 20, 30, 50]
+
+    for s_th in s_ths:
+        strong_filter = g.new_edge_property("bool")
+        strong_filter.a = (g.ep["syn_count"].a >= s_th)
+        g.set_edge_filter(strong_filter)
+        
+        
+        rec = gt.edge_reciprocity(g)
+        edrec.append(rec)
+        des = g.num_edges() / (g.num_vertices() * (g.num_vertices()-1))
+        densities.append(des)
+        edrecER.append(rec/des)
+        clustering_coef = gt.global_clustering(g)[0]
+        clustering_coefs.append(clustering_coef)
+        
+        sg_cmps, sg_cmp_hist = gt.label_components(g, directed=True)
+        sg_size =  np.sort(sg_cmp_hist)[::-1][:2]
+        scc1st.append(sg_size[0])
+        scc2nd.append(sg_size[1])
+        
+        wg_cmps, wg_cmp_hist = gt.label_components(g, directed=False)
+        wg_size =  np.sort(wg_cmp_hist)[::-1][:2]
+        wcc1st.append(wg_size[0])
+        wcc2nd.append(wg_size[1])
+        
+        g.clear_filters()
+
+    fig, ax = plt.subplots(1,1,figsize=(6,4))
+    ax.plot(s_ths, scc1st, marker='o', label='1st SCC')
+    ax.plot(s_ths, scc2nd, marker='o', label='2nd SCC')
+    ax.set_ylabel("Size of the components")
+    ax.set_xlabel("Threshold of #syn. per connection")
+    ax.legend()
+    
+    fig, ax = plt.subplots(1,1,figsize=(6,4))
+    ax.plot(s_ths, wcc1st, marker='o', label='1st WCC')
+    ax.plot(s_ths, wcc2nd, marker='o', label='2nd WCC')
+    ax.set_ylabel("Size of the components")
+    ax.set_xlabel("Threshold of #syn. per connection")
+    ax.legend()
+    
+    fig, ax = plt.subplots(1,1,figsize=(6,4))
+    ax.plot(s_ths, edrec, marker='o', label='Reciprocity', color='gray')
+    ax.set_ylabel("Reciprocity")
+    ax.set_xlabel("Threshold of #syn. per connection")
+    ax.legend()
+
+    fig, ax = plt.subplots(1,1,figsize=(6,4))
+    ax.plot(s_ths, densities, marker='o', label='Density', color='gray')
+    ax.set_ylabel("Density")
+    ax.set_xlabel("Threshold of #syn. per connection")
+    ax.legend()
+
+    fig, ax = plt.subplots(1,1,figsize=(6,4))
+    ax.plot(s_ths, edrecER, marker='o', label='Reciprocity/Density', color='gray')
+    ax.set_ylabel("Relative Reciprocity")
+    ax.set_xlabel("Threshold of #syn. per connection")
+    ax.legend()
+
+    fig, ax = plt.subplots(1,1,figsize=(6,4))
+    ax.plot(s_ths, clustering_coefs, marker='o', label='Clustering Coef.', color='gray')
+    ax.set_ylabel("Clustering Coefficient")
+    ax.set_xlabel("Threshold of #syn. per connection")
+    ax.legend()
+    plt.show()
 
 """ 
 PRINT 
@@ -203,12 +313,12 @@ def print_summmary_statistics(g, version):
     total_degrees = in_degrees + out_degrees
     
     print(f'\n=== v{version} ===')
-    print('\nNumber of Nodes:', n)
-    print('Number of Edges:', m)
+    print(f'\nNumber of Nodes: {n:,}')
+    print(f'Number of Edges: {m:,}')
 
     print(f'\nAverage Node Degree: {k_mean:4f}')
     print(f'\nAverage Node Degree: {k_mean:4f}')
-    print('Maximum Node Degree:', max(total_degrees))
+    print(f'Maximum Node Degree: {max(total_degrees):,}')
     print('Minimum Node Degree:', min(total_degrees))
 
     print(f'\nConnection Probability: {connection_probability:4f}')
@@ -216,8 +326,24 @@ def print_summmary_statistics(g, version):
 
     print('Pseudo-diameter:', dist_unweighted)
     print(f'Clustering coefficient: {c[0]:4f} with standard deviation {c[1]:4f}')
-    print(f'Number of triangles: {num_triangles}')
-    print(f'Number of triples: {num_triples}', '\n')
+    print(f'Number of triangles: {num_triangles:,}')
+    print(f'Number of triples: {num_triples:,}', '\n')
+
+def print_component_summary(g):
+    # Strongly Connected Components (SCCs)
+    sg_cmps, sg_cmp_hist = gt.label_components(g, directed=True)
+
+    # Weakly Connected Components (WCCs)
+    wg_cmps, wg_cmp_hist = gt.label_components(g, directed=False)
+
+
+    print("top sizes of SCC:", np.sort(sg_cmp_hist)[::-1][:10])
+    print("number of SCC:", len(sg_cmp_hist))
+
+    print('')
+
+    print("top sizes of WCC:", np.sort(wg_cmp_hist)[::-1][:10])
+    print("number of WCC:", len(wg_cmp_hist))
 
 """ 
 MISC
@@ -287,3 +413,9 @@ def get_region_stats():
                 "#bc21a2","#8a34d4","#8a34d4","#bc21a2","#bc21a2","#A21A78","#A21A78","#EA4BEA"]
     
     return all_regions, np_order, np_names, np_color
+
+def main():
+    return
+
+if __name__ == "__main__":
+    main()
